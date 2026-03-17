@@ -1,82 +1,282 @@
 <!DOCTYPE html>
-<html lang="cs">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#0a0e17">
-  <link rel="manifest" href="manifest.json">
-  <title>Route Optimizer</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
-<body>
-<div id="errorBox" style="display:none;background:#450a0a;border:2px solid #dc2626;border-radius:12px;padding:16px;margin:16px;font-family:monospace;font-size:12px;color:#fca5a5;word-break:break-all;max-height:300px;overflow:auto;position:fixed;bottom:0;left:0;right:0;z-index:9999"></div>
-<script>
-window.onerror=function(m,s,l){var b=document.getElementById("errorBox");b.style.display="block";b.innerHTML+="❌ "+m+" (line "+l+")<br>";return false};
-window.addEventListener("unhandledrejection",function(e){var b=document.getElementById("errorBox");b.style.display="block";b.innerHTML+="❌ "+e.reason+"<br>"});
-</script>
-<div class="container">
-  <h1>Route Optimizer</h1>
-  <div class="subtitle">servisní trasy · optimalizované navigace</div>
+<html lang="cs"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0e17">
+<title>Route Optimizer</title>
+<style>
+:root{--bg:#0a0e17;--sf:#0f1729;--bd:#1a2332;--tx:#e2e8f0;--dm:#475569;--ac:#60a5fa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.5}
+.c{max-width:700px;margin:0 auto;padding:20px 16px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.8px;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+.sub{font-size:13px;color:var(--dm);font-family:monospace;margin-bottom:20px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:18px 22px;margin-bottom:14px}
+label{display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:1.5px;font-family:monospace}
+input[type=text],input[type=number]{width:100%;padding:11px 14px;border-radius:9px;border:1px solid var(--bd);background:#060a14;color:var(--tx);font-size:15px;outline:none}
+input[type=file]{display:block;margin-top:8px;color:var(--dm);font-size:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.go{display:block;width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3b82f6,#6366f1);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;-webkit-appearance:none}
+.go:active{opacity:.8;transform:scale(.98)}
+.sm{display:inline-flex;padding:10px 16px;border-radius:9px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;margin-right:8px;margin-bottom:8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.st{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;text-align:center}
+.sn{font-family:monospace;font-size:26px;font-weight:700;color:var(--ac)}
+.sl{font-size:11px;color:var(--dm)}
+.prog{height:6px;background:var(--bd);border-radius:3px;overflow:hidden;margin-top:10px}
+.pb{height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:3px;transition:width .3s}
+.log{margin-top:12px;padding:10px;background:#0d0d0d;border:1px solid #333;border-radius:8px;max-height:200px;overflow:auto;font-size:11px;color:#94a3b8;font-family:monospace;word-break:break-all}
+.warn{background:#7c2d1222;border:1px solid #92400e44;border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:12px;color:#fbbf24}
+.ok{background:#22c55e18;border:1px solid #22c55e44;border-radius:10px;padding:8px 14px;margin-bottom:12px;font-size:13px;color:#22c55e}
+details{background:var(--sf);border:1px solid var(--bd);border-radius:14px;margin-bottom:10px;overflow:hidden}
+details summary{padding:14px 18px;cursor:pointer;list-style:none;-webkit-appearance:none}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{border-bottom:1px solid var(--bd)}
+.rn{font-family:monospace;font-size:12px;font-weight:700;background:#3b82f6;color:var(--bg);padding:2px 7px;border-radius:5px;margin-right:8px}
+.rc{font-family:monospace;font-size:11px;color:var(--dm);background:var(--bd);padding:2px 7px;border-radius:5px;margin-left:8px}
+.rm{font-size:12px;color:var(--dm);margin-top:3px}
+.rb{padding:0 18px 18px}
+.nb{display:block;padding:13px;border-radius:10px;text-align:center;text-decoration:none;font-weight:700;font-size:15px;margin-bottom:8px}
+.na{background:linear-gradient(135deg,#007AFF,#5856D6);color:white}
+.ng{background:linear-gradient(135deg,#34a853,#4285f4);color:white}
+.no{background:var(--bd);border:1px solid #253041;color:var(--tx);font-weight:600;font-size:14px}
+.sr{font-family:monospace;font-size:12px;color:#22c55e;padding:7px 10px;background:#22c55e11;border-radius:7px;margin-bottom:6px}
+.er{font-family:monospace;font-size:12px;color:#eab308;padding:7px 10px;background:#eab30811;border-radius:7px;margin-top:6px}
+.sp{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #1a233244}
+.sp:last-child{border-bottom:none}
+.spn{font-family:monospace;font-size:11px;font-weight:600;color:var(--dm);min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;background:var(--bd);border-radius:5px;flex-shrink:0}
+.bp{display:inline-block;font-family:monospace;font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;background:#60a5fa22;color:#60a5fa}
+.bk{display:inline-block;font-family:monospace;font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;background:#f59e0b22;color:#f59e0b}
+.si{width:100%;padding:11px 14px;border-radius:9px;border:1px solid var(--bd);background:#060a14;color:var(--tx);font-size:15px;outline:none;margin-bottom:14px}
+.hint{text-align:center;font-size:12px;color:var(--dm);margin-top:12px}
+.err{background:#450a0a;border:2px solid #dc2626;border-radius:12px;padding:12px 16px;margin-bottom:14px;font-family:monospace;font-size:11px;color:#fca5a5;word-break:break-all}
+@media(max-width:480px){.row{grid-template-columns:1fr}.stats{gap:6px}.st{padding:10px}.sn{font-size:22px}}
+</style>
+</head><body>
+<div class="c">
+<h1>Route Optimizer</h1>
+<div class="sub">online · geokódování přes OpenStreetMap</div>
+<div id="errBox" class="err" style="display:none"></div>
 
-  <!-- ═══ UPLOAD SCREEN ═══ -->
-  <div id="upload">
-    <div class="card">
-      <label>Vstupní tabulka adres (.xlsx / .csv / .ods)</label>
-      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.ods,.tsv">
-      <div id="fileInfo" style="margin-top:8px; font-size:13px; color:#64748b"></div>
-    </div>
-    <div class="row">
-      <div class="card">
-        <label>Start (město/adresa)</label>
-        <input type="text" id="startInput" placeholder="Zadej">
-      </div>
-      <div class="card">
-        <label>Max doba jízdy (hodiny)</label>
-        <input type="number" id="maxInput" placeholder="Zadej" step="0.5" min="0.5" max="8">
-      </div>
-    </div>
-    <button class="btn btn-primary" id="goBtn" disabled onclick="processAll()">Vygeneruj si trasu</button>
-    <p class="hint">Vyplň všechna pole a nahraj tabulku</p>
-  </div>
-
-  <!-- ═══ PROCESSING SCREEN ═══ -->
-  <div id="processing" style="display:none">
-    <div class="card">
-      <div style="display:flex; justify-content:space-between">
-        <span id="progMsg" style="color:#94a3b8; font-size:14px"></span>
-        <span id="progPct" style="font-family:monospace; color:#60a5fa; font-weight:700"></span>
-      </div>
-      <div class="progress-track"><div class="progress-bar" id="progBar" style="width:0%"></div></div>
-      <div id="logBox" class="log-box" style="display:none"></div>
-    </div>
-  </div>
-
-  <!-- ═══ RESULTS SCREEN ═══ -->
-  <div id="results" style="display:none">
-    <div class="stats">
-      <div class="stat"><div class="stat-num" id="rPts">0</div><div class="stat-label">bodů</div></div>
-      <div class="stat"><div class="stat-num" id="rRoutes">0</div><div class="stat-label">tras</div></div>
-      <div class="stat"><div class="stat-num" id="rTypes">0</div><div class="stat-label">P / K</div></div>
-    </div>
-    <div id="rWarn" class="warning" style="display:none"></div>
-    <div style="margin-bottom:14px">
-      <button class="btn-sm" onclick="dlHTML()">📄 HTML pro iPhone</button>
-      <button class="btn-sm" onclick="dlVCF()">👤 vCard</button>
-      <button class="btn-sm" style="float:right" onclick="resetApp()">↩ Nový</button>
-    </div>
-    <div style="clear:both"></div>
-    <input class="search-input" placeholder="Hledat bod, město…" oninput="filterRoutes(this.value)">
-    <div id="routeList" class="route-list"></div>
-  </div>
+<div id="V1">
+<div class="card">
+<label>Vstupní tabulka adres (.xlsx / .csv / .ods)</label>
+<input type="file" id="FI" accept=".xlsx,.xls,.csv,.ods,.tsv,.numbers">
+<div id="FInfo" style="margin-top:8px;font-size:13px;color:#64748b"></div>
+</div>
+<div class="row">
+<div class="card"><label>Start (město/adresa)</label><input type="text" id="SI" placeholder="Zadej"></div>
+<div class="card"><label>Max doba jízdy (hodiny)</label><input type="number" id="MI" placeholder="Zadej" step="0.5" min="0.5" max="8"></div>
+</div>
+<button class="go" onclick="run()">Vygeneruj si trasu</button>
+<p class="hint">Vyplň všechna pole a nahraj tabulku</p>
 </div>
 
-<script src="js/geocode.js"></script>
-<script src="js/router.js"></script>
-<script src="js/export.js"></script>
-<script src="js/app.js"></script>
-</body>
-</html>
+<div id="V2" style="display:none"><div class="card">
+<div style="display:flex;justify-content:space-between"><span id="PM" style="color:#94a3b8;font-size:14px"></span><span id="PP" style="font-family:monospace;color:#60a5fa;font-weight:700"></span></div>
+<div class="prog"><div class="pb" id="PB" style="width:0%"></div></div>
+<div id="LOG" class="log" style="display:none"></div>
+</div></div>
+
+<div id="V3" style="display:none">
+<div class="stats">
+<div class="st"><div class="sn" id="RP">0</div><div class="sl">bodů</div></div>
+<div class="st"><div class="sn" id="RR">0</div><div class="sl">tras</div></div>
+<div class="st"><div class="sn" id="RT">0</div><div class="sl">P / K</div></div>
+</div>
+<div id="RW" class="warn" style="display:none"></div>
+<div style="margin-bottom:14px">
+<button class="sm" onclick="xHTML()">📄 HTML</button>
+<button class="sm" onclick="xVCF()">👤 vCard</button>
+<button class="sm" style="float:right" onclick="neu()">↩ Nový</button>
+</div><div style="clear:both"></div>
+<input class="si" placeholder="Hledat bod, město…" oninput="flt(this.value)">
+<div id="RL"></div>
+</div>
+</div>
+
+<script>
+var E=document.getElementById.bind(document);
+var _e=E("errBox");
+window.onerror=function(m,s,l){_e.style.display="block";_e.innerHTML+="<b>JS Error:</b> "+m+" ("+l+")<br>"};
+window.addEventListener("unhandledrejection",function(ev){_e.style.display="block";_e.innerHTML+="<b>Promise:</b> "+ev.reason+"<br>"});
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// Verify XLSX loaded
+if(typeof XLSX==="undefined"){
+  document.getElementById("errBox").style.display="block";
+  document.getElementById("errBox").innerHTML="<b>SheetJS se nenačetl!</b> Potřebuješ internet (CDN).";
+}
+
+// ══════ STATE ══════
+var pts=[],routes=[],sc=null,sn="";
+var ua=navigator.userAgent||"";
+var isA=/iPhone|iPad|iPod|Mac/.test(ua)&&!/Android/.test(ua);
+var isD=/Android/.test(ua);
+
+// ══════ MATH ══════
+function hav(a,b,c,d){var R=6371,t=Math.PI/180,dl=(c-a)*t,dn=(d-b)*t;var x=Math.sin(dl/2)**2+Math.cos(a*t)*Math.cos(c*t)*Math.sin(dn/2)**2;return R*2*Math.asin(Math.sqrt(x))}
+function rkm(a,b,c,d){return hav(a,b,c,d)*1.35}
+function dh(a,b,c,d){return rkm(a,b,c,d)/60}
+
+// ══════ FILE PARSE ══════
+E("FI").onchange=function(ev){
+  var f=ev.target.files[0];if(!f)return;
+  try{
+    var r=new FileReader();
+    r.onload=function(e){
+      try{
+        var wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+        pts=[];
+        wb.SheetNames.forEach(function(s){
+          var typ=s.replace(/ Morava/gi,"").trim();
+          XLSX.utils.sheet_to_json(wb.Sheets[s],{defval:""}).forEach(function(row){
+            var fc=function(ks){for(var k of Object.keys(row))if(ks.some(function(x){return k.toLowerCase().includes(x)}))return row[k];return""};
+            var nz=fc(["název boxu","nazev boxu","název","nazev","name"]);
+            if(!nz)return;
+            pts.push({nazev:String(nz).trim(),mesto:String(fc(["město","mesto","city"])).trim(),adresa:String(fc(["adresa","address"])).trim(),psc:String(fc(["psč","psc"])).replace(/\.0$/,""),kraj:String(fc(["kraj"])).trim(),hd:String(fc(["hd"])).replace(/\.0$/,""),lockerid:String(fc(["lockerid"])).replace(/\.0$/,""),typ:typ,sheet:s,lat:null,lon:null});
+          });
+        });
+        var tc={};pts.forEach(function(p){tc[p.typ]=(tc[p.typ]||0)+1});
+        E("FInfo").innerHTML="<b style='color:#22c55e'>✓ "+pts.length+" bodů</b> · "+Object.keys(tc).map(function(k){return tc[k]+"× "+k}).join(", ");
+      }catch(err){
+        E("FInfo").innerHTML="<b style='color:#f85149'>✗ "+err.message+"</b>";
+        if(err.message.indexOf("Unsupported")>=0||err.message.indexOf("CFB")>=0)
+          E("FInfo").innerHTML+="<br>→ .numbers nepodporován. Exportuj jako .xlsx";
+      }
+    };
+    r.readAsArrayBuffer(f);
+  }catch(err){E("FInfo").innerHTML="<b style='color:#f85149'>✗ "+err.message+"</b>"}
+};
+
+// ══════ GEOCODE (Nominatim) ══════
+async function geo1(q){
+  try{
+    var r=await fetch("https://nominatim.openstreetmap.org/search?format=json&countrycodes=cz&limit=1&q="+encodeURIComponent(q),{headers:{"User-Agent":"RouteOpt/1"}});
+    var t=await r.text();var d=JSON.parse(t);
+    if(d.length>0)return{lat:parseFloat(d[0].lat),lon:parseFloat(d[0].lon)};
+  }catch(e){}
+  return null;
+}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+
+// ══════ ROUTING ══════
+function buildR(points,start,maxH){
+  var v=points.filter(function(p){return p.lat!=null});if(!v.length)return[];
+  v.forEach(function(p){p.angle=Math.atan2(p.lat-start[0],p.lon-start[1])});
+  var s=v.slice().sort(function(a,b){return a.angle-b.angle});
+  var ag=s.map(function(p){return p.angle}),mn=Math.min.apply(null,ag),mx=Math.max.apply(null,ag);
+  var ns=10,sz=(mx-mn)/ns||1,sec=[];for(var i=0;i<ns;i++)sec.push([]);
+  s.forEach(function(p){sec[Math.min(Math.floor((p.angle-mn)/sz),ns-1)].push(p)});
+  sec=sec.filter(function(x){return x.length>0});
+  var mg=[],i=0;
+  while(i<sec.length){var c=sec[i].slice();while(i+1<sec.length&&(c.length<3||sec[i+1].length<3)){i++;c=c.concat(sec[i]);if(c.length>=8)break}mg.push(c);i++}
+  function nn(p){var r=p.slice(),o=[],c=start;while(r.length){var b=0;for(var j=1;j<r.length;j++)if(hav(c[0],c[1],r[j].lat,r[j].lon)<hav(c[0],c[1],r[b].lat,r[b].lon))b=j;o.push(r[b]);c=[r[b].lat,r[b].lon];r.splice(b,1)}return o}
+  var all=[];
+  for(var si=0;si<mg.length;si++){var od=nn(mg[si]),cr=[],ct=0,pv=start;for(var pi=0;pi<od.length;pi++){var p=od[pi],sg=dh(pv[0],pv[1],p.lat,p.lon);if(ct+sg>maxH&&cr.length>0){all.push(cr);cr=[p];ct=dh(start[0],start[1],p.lat,p.lon)}else{cr.push(p);ct+=sg}pv=[p.lat,p.lon]}if(cr.length)all.push(cr)}
+  return all.map(function(rt,idx){
+    var td=0,tt=0,pv=start;rt.forEach(function(p){var d=rkm(pv[0],pv[1],p.lat,p.lon);td+=d;tt+=d/60;pv=[p.lat,p.lon]});
+    var last=rt[rt.length-1],rk=rkm(last.lat,last.lon,start[0],start[1]),rh=rk/60;
+    var tp={};rt.forEach(function(p){tp[p.typ]=(tp[p.typ]||0)+1});
+    var ct=[];rt.forEach(function(p){if(ct.indexOf(p.mesto)===-1)ct.push(p.mesto)});
+    var nm;if(rt.length<=3)nm=ct.join(" → ");
+    else{var al=rt.reduce(function(s,p){return s+p.lat},0)/rt.length;var ao=rt.reduce(function(s,p){return s+p.lon},0)/rt.length;var rg=ao>17?"Vyškovsko":al>49.5?"Svitavsko":al>49.3?"Tišnovsko":ao<16.3?"Vysočina":"Brněnsko";var ds=[];if(al-start[0]>0.15)ds.push("S");else if(al-start[0]<-0.05)ds.push("J");if(ao-start[1]>0.2)ds.push("V");else if(ao-start[1]<-0.1)ds.push("Z");nm=rg+(ds.length?" "+ds.join(""):"")}
+    return{id:idx+1,name:nm,points:rt,count:rt.length,types:tp,driveKm:Math.round(td),driveH:+tt.toFixed(1),retKm:Math.round(rk),retH:+rh.toFixed(1),over:tt>maxH}
+  })
+}
+
+// ══════ MAIN ══════
+async function run(){
+  sn=E("SI").value.trim();
+  var mh=parseFloat(E("MI").value);
+  if(!pts.length){alert("Nejdřív nahraj tabulku (.xlsx)");return}
+  if(!sn){alert("Zadej startovní místo");return}
+  if(!mh||mh<=0){alert("Zadej dobu jízdy");return}
+  E("V1").style.display="none";E("V2").style.display="block";
+  var lg=E("LOG");lg.style.display="block";lg.innerHTML="";
+  function log(m){lg.innerHTML+=m+"<br>";lg.scrollTop=lg.scrollHeight}
+
+  log("Geokóduji start: "+sn+"…");
+  var sg=await geo1(sn+", Czech Republic");
+  if(!sg)sg=await geo1(sn);
+  if(sg){sc=[sg.lat,sg.lon];log("✓ "+sn+" → "+sg.lat.toFixed(4)+","+sg.lon.toFixed(4))}
+  else{log("✗ Start nenalezen!");alert("Město \""+sn+"\" nenalezeno.");E("V2").style.display="none";E("V1").style.display="block";return}
+
+  var ok=0,fl=[];
+  for(var i=0;i<pts.length;i++){
+    var p=pts[i];
+    E("PM").textContent=(i+1)+"/"+pts.length+": "+p.mesto;
+    var pc=Math.round(((i+1)/pts.length)*100);
+    E("PP").textContent=pc+"%";E("PB").style.width=pc+"%";
+    var g=await geo1(p.adresa+", "+p.mesto+", Czech Republic");
+    if(!g)g=await geo1(p.mesto+", Czech Republic");
+    if(g){p.lat=g.lat;p.lon=g.lon;ok++}else{fl.push(p.nazev);log("✗ "+p.mesto)}
+    await wait(1050);
+  }
+  log("Hotovo: "+ok+" ✓, "+fl.length+" ✗");
+  E("PM").textContent="Optimalizuji trasy…";
+  routes=buildR(pts,sc,mh);
+  show(fl.length);
+}
+
+// ══════ SHOW RESULTS ══════
+function show(fc){
+  E("V2").style.display="none";E("V3").style.display="block";
+  var tp=routes.reduce(function(s,r){return s+r.count},0);
+  var tP=routes.reduce(function(s,r){return s+(r.types["Profylaxe"]||0)},0);
+  var tK=routes.reduce(function(s,r){return s+(r.types["Koroze"]||0)},0);
+  E("RP").textContent=tp;E("RR").textContent=routes.length;E("RT").textContent=tP+"P/"+tK+"K";
+  if(fc>0){E("RW").style.display="block";E("RW").textContent="⚠ "+fc+" adres bez GPS"}
+  render();
+}
+function render(){
+  var h="";
+  routes.forEach(function(r){
+    var sa=sc[0]+","+sc[1],da=r.points.slice(0,25).map(function(p){return p.lat+","+p.lon}).join("+to:");
+    var mu="maps://?saddr="+sa+"&daddr="+da+"&dirflg=d";
+    var last=r.points[r.points.length-1],wp=r.points.slice(0,-1).map(function(p){return p.lat+","+p.lon}).join("|");
+    var gu="https://www.google.com/maps/dir/?api=1&origin="+sa+"&destination="+last.lat+","+last.lon;
+    if(wp)gu+="&waypoints="+encodeURIComponent(wp);
+    var wu="https://waze.com/ul?navigate=yes&ll="+last.lat+","+last.lon;
+    var ts=Object.keys(r.types).map(function(k){return r.types[k]+"×"+k[0]}).join(" + ");
+    var w=r.over?'<div style="color:#f85149;font-size:11px;margin-top:2px">⚠ Přesahuje limit</div>':"";
+    var nb="";
+    if(isA)nb='<a href="'+mu+'" class="nb na">🍎 Apple Maps</a><a href="'+gu+'" class="nb no">🗺 Google Maps</a>';
+    else if(isD)nb='<a href="'+gu+'" class="nb ng">🗺 Google Maps</a><a href="'+wu+'" class="nb no">🟣 Waze</a>';
+    else nb='<a href="'+gu+'" class="nb ng">🗺 Google Maps</a><a href="'+mu+'" class="nb no">🍎 Apple Maps</a><a href="'+wu+'" class="nb no">🟣 Waze</a>';
+    var st="";r.points.forEach(function(p,j){var bc=p.typ==="Profylaxe"?"bp":"bk";st+='<div class="sp"><div class="spn">'+(j+1)+'</div><div><span class="'+bc+'">'+p.typ[0]+'</span> <span style="font-weight:500;font-size:13px">'+p.nazev+'</span><div style="font-size:12px;color:#475569">'+p.adresa+', '+p.mesto+'</div></div></div>'});
+    var sd=r.points.map(function(p){return(p.nazev+" "+p.mesto+" "+p.adresa).toLowerCase()}).join(" ")+" "+r.name.toLowerCase();
+    h+='<details data-s="'+sd+'"><summary><span class="rn">T'+r.id+'</span><b style="font-size:15px">'+r.name+'</b><span class="rc">'+r.count+'</span>'+w+'<div class="rm">🕐 '+r.driveH+'h · 📏 '+r.driveKm+' km · '+ts+'</div></summary><div class="rb">'+nb+'<div class="sr">▶ '+sn+'</div>'+st+'<div class="er">◀ '+sn+' (+'+r.retH+'h / '+r.retKm+' km)</div></div></details>'
+  });
+  E("RL").innerHTML=h;
+}
+function flt(q){q=q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");document.querySelectorAll("#RL details").forEach(function(d){var t=(d.getAttribute("data-s")||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"");d.style.display=(!q||t.indexOf(q)>=0)?"":"none";if(q&&t.indexOf(q)>=0)d.open=true})}
+function neu(){pts=[];routes=[];E("V3").style.display="none";E("V1").style.display="block";E("FI").value="";E("FInfo").textContent="";E("RW").style.display="none"}
+
+// ══════ EXPORT ══════
+function dl(c,n,t){var b=new Blob([c],{type:t}),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=n;a.click();URL.revokeObjectURL(u)}
+function xHTML(){
+  var tp=routes.reduce(function(s,r){return s+r.count},0);
+  var bl=routes.map(function(r){
+    var sa=sc[0]+","+sc[1],da=r.points.slice(0,25).map(function(p){return p.lat+","+p.lon}).join("+to:");
+    var mu="maps://?saddr="+sa+"&daddr="+da+"&dirflg=d";
+    var last=r.points[r.points.length-1],wp=r.points.slice(0,-1).map(function(p){return p.lat+","+p.lon}).join("|");
+    var gu="https://www.google.com/maps/dir/?api=1&origin="+sa+"&destination="+last.lat+","+last.lon;
+    if(wp)gu+="&waypoints="+encodeURIComponent(wp);
+    var wu="https://waze.com/ul?navigate=yes&ll="+last.lat+","+last.lon;
+    var ts=Object.keys(r.types).map(function(k){return r.types[k]+"×"+k[0]}).join(" + ");
+    var w=r.over?'<p style="margin:8px 0 0;padding:6px 12px;background:rgba(248,81,73,.12);border:1px solid rgba(248,81,73,.3);border-radius:8px;font-size:13px;color:#f85149">⚠ Přesahuje limit</p>':"";
+    var st=r.points.map(function(p,j){var bc=p.typ==="Profylaxe"?"#58a6ff":"#f0883e";return'<tr><td style="width:32px;text-align:center;font-family:monospace;font-size:12px;color:#8b949e;padding:8px 4px">'+(j+1)+'</td><td style="padding:8px 4px"><span style="font-family:monospace;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:'+bc+'22;color:'+bc+'">'+p.typ[0]+'</span> <b style="font-weight:500">'+p.nazev+'</b><br><span style="font-size:13px;color:#8b949e">'+p.adresa+', '+p.mesto+'</span></td></tr>'}).join("");
+    return'<details style="background:#161b22;border:1px solid #30363d;border-radius:12px;margin-bottom:12px"><summary style="padding:16px;cursor:pointer;list-style:none;-webkit-appearance:none"><span style="font-family:monospace;font-size:13px;font-weight:600;background:#58a6ff;color:#0d1117;padding:2px 8px;border-radius:6px;margin-right:8px">T'+r.id+'</span><b style="font-size:16px">'+r.name+'</b><span style="font-family:monospace;font-size:12px;color:#8b949e;background:#1c2333;padding:2px 8px;border-radius:6px;margin-left:8px">'+r.count+'</span><br><span style="font-size:13px;color:#8b949e;display:inline-block;margin-top:4px">🕐 '+r.driveH+'h · 📏 '+r.driveKm+' km · '+ts+'</span>'+w+'</summary><div style="padding:0 16px 16px"><a href="'+mu+'" style="display:block;padding:14px;border-radius:10px;text-align:center;text-decoration:none;font-weight:700;font-size:15px;background:linear-gradient(135deg,#007AFF,#5856D6);color:white;margin-bottom:8px">🍎 Apple Maps</a><a href="'+gu+'" style="display:block;padding:14px;border-radius:10px;text-align:center;text-decoration:none;font-weight:600;font-size:14px;background:#1c2333;border:1px solid #30363d;color:#e6edf3;margin-bottom:8px">🗺 Google Maps</a><a href="'+wu+'" style="display:block;padding:14px;border-radius:10px;text-align:center;text-decoration:none;font-weight:600;font-size:14px;background:#1c2333;border:1px solid #30363d;color:#e6edf3;margin-bottom:14px">🟣 Waze</a><div style="font-family:monospace;font-size:13px;color:#3fb950;padding:8px 12px;background:rgba(63,185,80,.08);border-radius:8px;margin-bottom:8px">▶ '+sn+'</div><table style="width:100%;border-collapse:collapse">'+st+'</table><div style="font-family:monospace;font-size:13px;color:#d29922;padding:8px 12px;background:rgba(210,153,34,.08);border-radius:8px;margin-top:8px">◀ '+sn+' (+'+r.retH+'h / '+r.retKm+' km)</div></div></details>'
+  }).join("\n");
+  dl('<!DOCTYPE html><html lang="cs"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>Servisní trasy</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;background:#0d1117;color:#e6edf3;line-height:1.5;padding:16px;max-width:680px;margin:0 auto}details summary::-webkit-details-marker{display:none}details[open] summary{border-bottom:1px solid #30363d}</style></head><body><h1 style="font-size:22px;font-weight:700;margin-bottom:4px">Servisní trasy</h1><p style="color:#8b949e;font-size:14px;margin-bottom:20px">'+sn+' · '+tp+' bodů · '+routes.length+' tras</p>'+bl+'<p style="text-align:center;font-size:12px;color:#8b949e;margin-top:24px;padding-top:24px;border-top:1px solid #30363d">Časy = odhady (× 1.35, Ø 60 km/h)</p></body></html>',"trasy_servis.html","text/html")
+}
+function xVCF(){
+  var c=[];routes.forEach(function(r){r.points.forEach(function(p){c.push("BEGIN:VCARD\nVERSION:3.0\nFN:"+p.nazev+"\nORG:"+(p.sheet||p.typ)+"\nCATEGORIES:"+p.typ+"\nADR:;;"+p.adresa+";"+p.mesto+";;"+p.psc+";Česká republika\nGEO:"+p.lat+";"+p.lon+"\nNOTE:HD:"+p.hd+" LID:"+p.lockerid+" T:"+p.typ+" R:T"+r.id+"\nEND:VCARD")})});
+  dl(c.join("\n"),"boxy_servis.vcf","text/vcard")
+}
+</script>
+</body></html>
