@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0a0e17">
+  <link rel="manifest" href="manifest.json">
+  <title>Route Optimizer</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div id="errorBox" style="display:none;background:#450a0a;border:2px solid #dc2626;border-radius:12px;padding:16px;margin:16px;font-family:monospace;font-size:12px;color:#fca5a5;word-break:break-all;max-height:300px;overflow:auto;position:fixed;bottom:0;left:0;right:0;z-index:9999"></div>
+<script>
+window.onerror=function(m,s,l){var b=document.getElementById("errorBox");b.style.display="block";b.innerHTML+="❌ "+m+" (line "+l+")<br>";return false};
+window.addEventListener("unhandledrejection",function(e){var b=document.getElementById("errorBox");b.style.display="block";b.innerHTML+="❌ "+e.reason+"<br>"});
+</script>
+<div class="container">
+  <h1>Route Optimizer</h1>
+  <div class="subtitle">servisní trasy · optimalizované navigace</div>
+
+  <!-- ═══ UPLOAD SCREEN ═══ -->
+  <div id="upload">
+    <div class="card">
+      <label>Vstupní tabulka adres (.xlsx / .csv / .ods)</label>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.ods,.tsv">
+      <div id="fileInfo" style="margin-top:8px; font-size:13px; color:#64748b"></div>
+    </div>
+    <div class="row">
+      <div class="card">
+        <label>Start (město/adresa)</label>
+        <input type="text" id="startInput" placeholder="Zadej">
+      </div>
+      <div class="card">
+        <label>Max doba jízdy (hodiny)</label>
+        <input type="number" id="maxInput" placeholder="Zadej" step="0.5" min="0.5" max="8">
+      </div>
+    </div>
+    <button class="btn btn-primary" id="goBtn" disabled onclick="processAll()">Vygeneruj si trasu</button>
+    <p class="hint">Vyplň všechna pole a nahraj tabulku</p>
+  </div>
+
+  <!-- ═══ PROCESSING SCREEN ═══ -->
+  <div id="processing" style="display:none">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between">
+        <span id="progMsg" style="color:#94a3b8; font-size:14px"></span>
+        <span id="progPct" style="font-family:monospace; color:#60a5fa; font-weight:700"></span>
+      </div>
+      <div class="progress-track"><div class="progress-bar" id="progBar" style="width:0%"></div></div>
+      <div id="logBox" class="log-box" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ═══ RESULTS SCREEN ═══ -->
+  <div id="results" style="display:none">
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="rPts">0</div><div class="stat-label">bodů</div></div>
+      <div class="stat"><div class="stat-num" id="rRoutes">0</div><div class="stat-label">tras</div></div>
+      <div class="stat"><div class="stat-num" id="rTypes">0</div><div class="stat-label">P / K</div></div>
+    </div>
+    <div id="rWarn" class="warning" style="display:none"></div>
+    <div style="margin-bottom:14px">
+      <button class="btn-sm" onclick="dlHTML()">📄 HTML pro iPhone</button>
+      <button class="btn-sm" onclick="dlVCF()">👤 vCard</button>
+      <button class="btn-sm" style="float:right" onclick="resetApp()">↩ Nový</button>
+    </div>
+    <div style="clear:both"></div>
+    <input class="search-input" placeholder="Hledat bod, město…" oninput="filterRoutes(this.value)">
+    <div id="routeList" class="route-list"></div>
+  </div>
+</div>
+
+<script src="js/geocode.js"></script>
+<script src="js/router.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
